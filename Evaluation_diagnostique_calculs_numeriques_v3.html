@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Évaluation diagnostique — Calculs numériques</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Sora:wght@400;500;600;700;800&family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=OpenDyslexic:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    :root {
+      --navy: #1A2C4F;
+      --navy-deep: #142340;
+      --gold: #C28A42;
+      --gold-l: #D4A464;
+      --gold-deep: #B47A35;
+      --gold-pale: rgba(212,164,100,.10);
+      --gold-soft: rgba(212,164,100,.18);
+      --beige: #F4F2EE;
+      --white: #FFFFFF;
+      --green: #15A362;
+      --green-dark: #0E7348;
+      --green-l: #E8F5EE;
+      --red: #D42626;
+      --red-dark: #A11717;
+      --red-l: #FEF2F2;
+      --text: #1A1311;
+      --text2: #4A4036;
+      --text3: #8A7F73;
+      --border: rgba(20,19,16,.10);
+      --r: 12px;
+      --rl: 16px;
+      --rxl: 22px;
+    }
+
+    /* Mode DYS */
+    body.dys * { font-family: 'OpenDyslexic', Arial, sans-serif !important; line-height: 1.9 !important; }
+
+    @keyframes gradientWave {
+      0%   { background-position:   0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position:   0% 50%; }
+    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes btnGlow {
+      0%   { box-shadow: 0 0 0 0 rgba(194,138,66,0); }
+      50%  { box-shadow: 0 6px 20px rgba(194,138,66,.30), 0 0 0 0 rgba(194,138,66,.10); }
+      100% { box-shadow: 0 0 0 0 rgba(194,138,66,0); }
+    }
+    @keyframes wrongShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+    @keyframes correctPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    html, body { height: 100%; }
+
+    /* SCALING RESPONSIVE — zoom progressif (cohérent avec les fiches) */
+    @media (min-width: 1600px) { body { zoom: 1.10; } }
+    @media (min-width: 1920px) { body { zoom: 1.20; } }
+    @media (min-width: 2200px) { body { zoom: 1.30; } }
+    @media (min-width: 2560px) { body { zoom: 1.40; } }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      font-family: 'Inter Tight', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      overflow-y: auto;
+      background: var(--beige);
+    }
+
+    /* Header */
+    .header {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px 28px;
+      background: rgba(244,242,238,.75);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-ligne {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13.5px; font-weight: 500;
+      color: var(--text2);
+      display: flex; align-items: center; gap: 10px;
+      letter-spacing: -.05px;
+    }
+    .header-sep { color: var(--gold-deep); font-weight: 700; }
+    .header-nom { font-weight: 700; color: var(--navy); font-family: 'Sora', sans-serif; letter-spacing: -.2px; }
+    .header-dys-badge {
+      display: none;
+      position: absolute; right: 20px;
+      align-items: center; gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: var(--gold-pale);
+      border: 1px solid var(--gold-soft);
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10.5px; font-weight: 700;
+      color: var(--gold-deep);
+      letter-spacing: .04em;
+    }
+    .header-dys-badge.visible { display: inline-flex; }
+    .header-dys-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+
+    /* DEV : bouton skip */
+    .dev-skip-btn {
+      position: absolute;
+      left: 20px; top: 50%;
+      transform: translateY(-50%);
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(20,19,16,.06);
+      border: 1px solid rgba(20,19,16,.12);
+      color: var(--text2);
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 11px; font-weight: 600;
+      cursor: pointer;
+      letter-spacing: .02em;
+      opacity: .6;
+      transition: opacity .2s;
+    }
+    .dev-skip-btn:hover { opacity: 1; background: rgba(20,19,16,.10); }
+
+    /* Écran */
+    .ecran {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; min-height: 100vh;
+      padding-top: 80px; padding-bottom: 40px;
+    }
+    .ecran.cache { display: none; }
+    .fond-vert {
+      background: linear-gradient(135deg, #F4F2EE, #FAF8F4, #F0EDE6, #F7F4ED, #F4F2EE);
+      background-size: 400% 400%;
+      animation: gradientWave 28s ease infinite;
+    }
+
+    /* Cards */
+    .carte {
+      background: rgba(255,255,255,.62);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,.85);
+      border-radius: var(--rxl);
+      padding: 56px 64px 52px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 14px;
+      max-width: 540px; width: 90%;
+      box-shadow: 0 8px 32px rgba(20,19,16,.05);
+    }
+    .carte.anime { animation: fadeUp .8s cubic-bezier(.22,1,.36,1) both; }
+    .eval-carte {
+      background: rgba(255,255,255,.70);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,.9);
+      border-radius: var(--rxl);
+      padding: 40px 52px 48px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 0;
+      max-width: 660px; width: 92%;
+      box-shadow: 0 8px 32px rgba(20,19,16,.06);
+    }
+
+    /* Badge */
+    .badge {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10.5px; font-weight: 700;
+      color: var(--gold-deep);
+      background: var(--gold-pale);
+      padding: 6px 18px;
+      border-radius: 999px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      border: 1px solid var(--gold-soft);
+    }
+
+    /* Titres */
+    .titre {
+      font-family: 'Sora', sans-serif;
+      font-size: clamp(24px, 4vw, 32px);
+      font-weight: 700;
+      color: var(--navy);
+      text-align: center;
+      line-height: 1.2;
+      letter-spacing: -.6px;
+    }
+    .titre .accent {
+      font-family: 'Fraunces', Georgia, serif;
+      font-style: italic;
+      font-weight: 500;
+      color: var(--gold-deep);
+      letter-spacing: -.2px;
+    }
+
+    /* Texte intro */
+    .texte-intro {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 14.5px; font-weight: 400;
+      color: var(--text2);
+      text-align: center;
+      line-height: 1.65;
+      max-width: 440px;
+      letter-spacing: -.05px;
+    }
+    .texte-intro strong { color: var(--navy); font-weight: 700; }
+
+    /* Bloc brouillon */
+    .brouillon-alert {
+      width: 100%;
+      background: linear-gradient(135deg, var(--gold-pale), rgba(212,164,100,.04));
+      border: 1.5px solid var(--gold-soft);
+      border-radius: var(--rl);
+      padding: 16px 20px;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .brouillon-ico { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .brouillon-body { flex: 1; }
+    .brouillon-titre {
+      font-family: 'Sora', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 4px;
+      letter-spacing: -.1px;
+    }
+    .brouillon-desc {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12.5px; font-weight: 400;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+    .brouillon-desc strong { color: var(--gold-deep); font-weight: 700; }
+
+    /* Bouton primaire */
+    .btn {
+      margin-top: 22px;
+      padding: 14px 36px;
+      border-radius: var(--r);
+      border: none;
+      background: linear-gradient(180deg, var(--gold-l), var(--gold-deep));
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      cursor: pointer;
+      letter-spacing: -.05px;
+      color: #fff;
+      animation: btnGlow 2.2s ease-in-out infinite;
+      transition: transform .15s, box-shadow .2s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(194,138,66,.35); }
+
+    /* Progression */
+    .prog-header {
+      width: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 8px;
+      margin-bottom: 24px;
+    }
+    .prog-badge {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 11px; font-weight: 700;
+      background: rgba(26,44,79,.08);
+      color: var(--navy);
+      padding: 5px 16px;
+      border-radius: 999px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      border: 1px solid rgba(26,44,79,.15);
+    }
+    .prog-nums {
+      font-family: 'Fraunces', Georgia, serif;
+      font-style: italic;
+      font-size: 12px; font-weight: 400;
+      color: var(--text3);
+      letter-spacing: -.05px;
+    }
+    .prog-track {
+      width: 100%; height: 6px;
+      background: rgba(20,19,16,.06);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold-l), var(--gold-deep));
+      border-radius: 999px;
+      transition: width .5s cubic-bezier(.22,1,.36,1);
+      width: 0%;
+    }
+
+    /* Zone question */
+    .q-zone {
+      width: 100%;
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(255,255,255,.8);
+      border-radius: var(--rl);
+      padding: 28px 24px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 22px;
+      animation: fadeIn .4s both;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,.5);
+    }
+    .q-label {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10.5px; font-weight: 700;
+      color: var(--gold-deep);
+      letter-spacing: .22em;
+      text-transform: uppercase;
+    }
+    .q-consigne {
+      font-family: 'Sora', sans-serif;
+      font-size: 16px; font-weight: 600;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.45;
+      letter-spacing: -.15px;
+    }
+    .q-consigne strong { color: var(--gold-deep); font-weight: 700; }
+
+    /* Affichage de l'expression (gros) */
+    .q-expr {
+      font-family: 'Sora', sans-serif;
+      font-size: 38px; font-weight: 700;
+      color: var(--navy);
+      text-align: center;
+      line-height: 1.1;
+      letter-spacing: -.8px;
+      min-height: 50px;
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    /* Fraction inline (pour q7) */
+    .frac-inline {
+      display: inline-flex; flex-direction: column;
+      align-items: center;
+      vertical-align: middle;
+      gap: 3px;
+    }
+    .frac-inline .fn,
+    .frac-inline .fd {
+      font-family: 'Sora', sans-serif;
+      font-size: 32px; font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+    }
+    .frac-inline .fb {
+      height: 3px;
+      background: var(--navy);
+      border-radius: 2px;
+      min-width: 32px;
+      width: 100%;
+    }
+
+    /* Champ de réponse (calcul direct) */
+    .rep-zone {
+      display: flex; align-items: center;
+      gap: 14px; justify-content: center;
+      flex-wrap: wrap;
+    }
+    .rep-input {
+      width: 140px; height: 56px;
+      border: 1.5px solid rgba(20,19,16,.18);
+      border-radius: var(--r);
+      background: rgba(255,255,255,.85);
+      font-family: 'Sora', sans-serif;
+      font-size: 26px; font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .rep-input::placeholder { color: var(--text3); font-weight: 400; }
+    .rep-input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-pale);
+    }
+    .rep-input:disabled {
+      background: rgba(20,19,16,.04);
+      border-color: var(--border);
+      color: var(--navy);
+    }
+
+    /* Bouton valider */
+    .btn-val {
+      padding: 12px 30px;
+      border-radius: var(--r);
+      border: none;
+      background: var(--navy);
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: -.05px;
+    }
+    .btn-val:hover {
+      background: var(--navy-deep);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(26,44,79,.25);
+    }
+    .btn-val:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* QCM : boutons de choix (style fiche) */
+    .qcm-zone {
+      display: flex; gap: 16px;
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .qcm-btn {
+      flex: 1;
+      min-width: 180px;
+      max-width: 240px;
+      background: rgba(255,255,255,.85);
+      border: 1.5px solid rgba(20,19,16,.12);
+      border-radius: var(--rl);
+      padding: 20px 22px;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 8px;
+      cursor: pointer;
+      transition: all .18s;
+      font-family: inherit;
+    }
+    .qcm-btn:hover:not(:disabled) {
+      border-color: var(--gold);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(194,138,66,.18);
+      background: rgba(255,255,255,.95);
+    }
+    .qcm-btn-ico {
+      font-family: 'Sora', sans-serif;
+      font-size: 24px; font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+      letter-spacing: -.4px;
+    }
+    .qcm-btn-lbl {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 12px; font-weight: 500;
+      color: var(--text2);
+      text-align: center;
+      letter-spacing: -.05px;
+    }
+    .qcm-btn.correct {
+      border-color: var(--green);
+      background: var(--green-l);
+      animation: correctPulse .4s ease;
+    }
+    .qcm-btn.correct .qcm-btn-ico { color: var(--green-dark); }
+    .qcm-btn.wrong {
+      border-color: var(--red);
+      background: var(--red-l);
+      animation: wrongShake .35s ease;
+    }
+    .qcm-btn.wrong .qcm-btn-ico { color: var(--red-dark); }
+    .qcm-btn:disabled { cursor: not-allowed; }
+
+    /* Résultats */
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
+      margin-top: 8px;
+    }
+    .result-item {
+      background: rgba(255,255,255,.7);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 12px 14px;
+      display: flex; align-items: center; gap: 10px;
+      transition: transform .15s;
+      cursor: pointer;
+    }
+    .result-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(20,19,16,.06);
+    }
+    .result-item.assigned {
+      border-color: var(--gold-soft);
+      background: linear-gradient(180deg, var(--gold-pale) 0%, rgba(255,255,255,.7) 100%);
+    }
+    .result-item.ok {
+      border-color: rgba(21,163,98,.25);
+      background: linear-gradient(180deg, var(--green-l) 0%, rgba(255,255,255,.7) 100%);
+    }
+    .result-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .result-item.assigned .result-dot { background: var(--gold); }
+    .result-item.ok .result-dot { background: var(--green); }
+    .result-titre {
+      font-family: 'Sora', sans-serif;
+      font-size: 11.5px; font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      letter-spacing: -.1px;
+    }
+    .result-score {
+      font-family: 'Inter Tight', sans-serif;
+      font-style: italic;
+      font-size: 10.5px;
+      color: var(--text3);
+      margin-top: 2px;
+    }
+    .result-niveau {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 9.5px; font-weight: 700;
+      color: var(--gold-deep);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      background: var(--gold-pale);
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    /* Stats */
+    .stat-box {
+      display: flex; gap: 32px;
+      justify-content: center;
+      margin: 10px 0 4px;
+    }
+    .stat-item { text-align: center; }
+    .stat-val {
+      font-family: 'Sora', sans-serif;
+      font-size: 38px; font-weight: 800;
+      line-height: 1;
+      letter-spacing: -1px;
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-lbl {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 9.5px; font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-top: 6px;
+    }
+    .stat-item.assigned .stat-val { color: var(--gold-deep); }
+    .stat-item.ok .stat-val { color: var(--green-dark); }
+
+    /* Bouton final */
+    .btn-retour {
+      margin-top: 22px;
+      padding: 14px 36px;
+      border-radius: var(--r);
+      border: none;
+      background: var(--navy);
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13.5px; font-weight: 700;
+      cursor: pointer;
+      letter-spacing: -.05px;
+      color: #fff;
+      transition: transform .15s, box-shadow .2s;
+    }
+    .btn-retour:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(26,44,79,.30);
+    }
+
+    /* Modale de correction */
+    .correction-overlay {
+      position: fixed; inset: 0;
+      background: rgba(20,19,16,.55);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 200;
+      display: none;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      animation: fadeIn .25s both;
+    }
+    .correction-overlay.visible { display: flex; }
+    .correction-card {
+      background: rgba(255,255,255,.95);
+      border-radius: var(--rxl);
+      padding: 36px 40px 32px;
+      max-width: 620px;
+      width: 100%;
+      max-height: 88vh;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 24px 60px rgba(20,19,16,.25);
+      animation: fadeUp .35s cubic-bezier(.22,1,.36,1) both;
+    }
+    .correction-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(20,19,16,.06);
+      color: var(--text2);
+      font-size: 22px; font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex; align-items: center; justify-content: center;
+      padding-bottom: 2px;
+    }
+    .correction-close:hover { background: rgba(20,19,16,.12); color: var(--text); }
+    .correction-kicker {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold-deep);
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .correction-titre {
+      font-family: 'Sora', sans-serif;
+      font-size: 22px; font-weight: 700;
+      color: var(--navy);
+      text-align: center;
+      letter-spacing: -.4px;
+      margin-bottom: 6px;
+      line-height: 1.25;
+    }
+    .correction-score {
+      font-family: 'Fraunces', Georgia, serif;
+      font-style: italic;
+      font-size: 14px;
+      color: var(--text3);
+      text-align: center;
+      margin-bottom: 24px;
+      letter-spacing: -.05px;
+    }
+    .correction-list {
+      display: flex; flex-direction: column;
+      gap: 12px;
+    }
+    .correction-q {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--rl);
+      padding: 16px 20px;
+      border-left: 3px solid transparent;
+    }
+    .correction-q.ok {
+      border-left-color: var(--green);
+      background: linear-gradient(180deg, var(--green-l) 0%, var(--white) 80%);
+    }
+    .correction-q.ko {
+      border-left-color: var(--red);
+      background: linear-gradient(180deg, var(--red-l) 0%, var(--white) 80%);
+    }
+    .correction-q-head {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 8px;
+    }
+    .correction-q-num {
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+    .correction-q-mark {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .correction-q.ok .correction-q-mark { background: var(--green); }
+    .correction-q.ko .correction-q-mark { background: var(--red); }
+    .correction-q-enonce {
+      font-family: 'Sora', sans-serif;
+      font-size: 13.5px; font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+      letter-spacing: -.15px;
+      margin-bottom: 10px;
+    }
+    .correction-q-expr {
+      font-family: 'Sora', sans-serif;
+      font-size: 18px; font-weight: 700;
+      color: var(--navy);
+      text-align: center;
+      padding: 8px 0;
+      letter-spacing: -.3px;
+    }
+    .correction-reponses {
+      margin-top: 10px;
+      display: flex; flex-direction: column;
+      gap: 6px;
+    }
+    .correction-rep-line {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 8px;
+    }
+    .correction-rep-line.toi { background: rgba(20,19,16,.04); }
+    .correction-rep-line.bonne { background: var(--green-l); }
+    .correction-rep-lbl {
+      font-weight: 600;
+      color: var(--text2);
+      letter-spacing: -.05px;
+    }
+    .correction-rep-line.bonne .correction-rep-lbl { color: var(--green-dark); }
+    .correction-rep-val {
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.2px;
+    }
+    .correction-rep-line.bonne .correction-rep-val { color: var(--green-dark); }
+
+    .res-message {
+      font-family: 'Fraunces', Georgia, serif;
+      font-style: italic;
+      font-size: 14.5px; font-weight: 400;
+      color: var(--text2);
+      text-align: center;
+      line-height: 1.55;
+      max-width: 460px;
+      letter-spacing: -.05px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-ligne">
+      <span id="header-lycee">—</span><span class="header-sep">·</span>
+      <span id="header-classe">—</span><span class="header-sep">·</span>
+      <span class="header-nom" id="header-nom">—</span>
+    </div>
+    <div class="header-dys-badge" id="header-dys-badge">Mode DYS</div>
+    <button class="dev-skip-btn" onclick="devSkipAll()" title="Dev : passer toutes les questions">⏩ Skip</button>
+  </div>
+
+  <div class="ecran fond-vert" id="ecran-chargement">
+    <div class="carte anime">
+      <div class="badge" id="chargement-badge">Évaluation diagnostique</div>
+      <div class="titre">Chargement<br><span class="accent">en cours…</span></div>
+    </div>
+  </div>
+
+  <div class="ecran fond-vert cache" id="ecran-accueil">
+    <div class="carte anime">
+      <div class="badge" id="accueil-badge">Évaluation diagnostique · Calculs numériques</div>
+      <div class="titre" id="accueil-titre">Bienvenue<br><span class="accent" id="prenom-accueil"></span> !</div>
+      <div class="texte-intro" id="accueil-intro">
+        Tu vas répondre à <strong>24 questions</strong> sur les calculs numériques.<br><br>
+        Pour chaque question, écris ta réponse ou choisis l'option correcte.<br>
+        Il n'y a <strong>pas de retour en arrière</strong> possible.<br><br>
+        Tes résultats nous permettront de te proposer les fiches adaptées.
+      </div>
+
+      <div class="brouillon-alert" id="brouillon-alert">
+        <div class="brouillon-ico">✏️</div>
+        <div class="brouillon-body">
+          <div class="brouillon-titre">⚠️ Brouillon indispensable !</div>
+          <div class="brouillon-desc">Tu dois avoir une feuille de brouillon et un stylo <strong>avant de commencer</strong>. Certains calculs nécessitent d'être posés. Sans brouillon, tu ne pourras pas répondre correctement.</div>
+        </div>
+      </div>
+
+      <button class="btn" id="btn-commencer" onclick="allerVers('ecran-accueil','ecran-eval');setTimeout(chargerQuestion,500)">J'ai mon brouillon, je commence →</button>
+    </div>
+  </div>
+
+  <div class="ecran fond-vert cache" id="ecran-eval">
+    <div class="eval-carte">
+      <div class="prog-header">
+        <div class="prog-badge" id="prog-badge">Question 1 / 24</div>
+        <div class="prog-nums" id="prog-nums">Calculs numériques</div>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+      <div class="q-zone" id="q-zone"></div>
+    </div>
+  </div>
+
+  <div class="ecran fond-vert cache" id="ecran-resultat">
+    <div class="carte anime" style="max-width:600px;gap:18px;">
+      <div class="badge" id="resultat-badge">Évaluation terminée ✓</div>
+      <div class="titre">Voilà tes résultats<br><span class="accent" id="prenom-res"></span></div>
+      <div class="stat-box">
+        <div class="stat-item assigned">
+          <div class="stat-val" id="res-nb-fiches">—</div>
+          <div class="stat-lbl">Fiches à travailler</div>
+        </div>
+        <div class="stat-item ok">
+          <div class="stat-val" id="res-nb-ok">—</div>
+          <div class="stat-lbl">Notions maîtrisées</div>
+        </div>
+      </div>
+      <div class="res-message" id="res-message"></div>
+      <div class="result-grid" id="result-grid"></div>
+      <button class="btn-retour" onclick="retourEspace()">Voir mes fiches →</button>
+    </div>
+  </div>
+
+  <!-- MODALE DE CORRECTION -->
+  <div class="correction-overlay" id="correction-overlay" onclick="fermerCorrection(event)">
+    <div class="correction-card" onclick="event.stopPropagation()">
+      <button class="correction-close" onclick="fermerCorrection()" aria-label="Fermer">×</button>
+      <div class="correction-kicker">CORRECTION</div>
+      <div class="correction-titre" id="correction-titre">—</div>
+      <div class="correction-score" id="correction-score">—</div>
+      <div class="correction-list" id="correction-list"></div>
+    </div>
+  </div>
+
+<script>
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlBMjVXIg58lsopoeQ5sEZW-jcQIOrOtnWwCGVtHLGjcmpi9exaYZ3oAEre4deZum2/exec';
+  const params = new URLSearchParams(window.location.search);
+  const nom       = params.get('nom')        || 'Élève';
+  const classe    = params.get('classe')     || '—';
+  const lycee     = params.get('lycee')      || '—';
+  const email     = params.get('email')      || '';
+  const prof      = params.get('prof')       || '';
+  const profEmail = params.get('prof_email') || '';
+  const dysActif  = params.get('dys') === '1';
+  const isReeval  = params.get('reeval') === '1';
+
+  document.getElementById('header-lycee').textContent = lycee;
+  document.getElementById('header-classe').textContent = classe;
+  document.getElementById('header-nom').textContent = nom;
+  document.getElementById('prenom-accueil').textContent = nom.split(' ')[0];
+  document.getElementById('prenom-res').textContent = nom.split(' ')[0];
+
+  if (dysActif) {
+    document.body.classList.add('dys');
+    document.getElementById('header-dys-badge').classList.add('visible');
+  }
+
+  // 24 questions sur les 8 fiches (3 par fiche)
+  // type 'calc'  : champ libre, réponse numérique
+  // type 'qcm'   : 2 boutons (a / b), bonne réponse = 'a' ou 'b'
+  // bloc = identifiant de la fiche (FICHE_ID des fiches HTML)
+  // niveau = niveau collège de la fiche (pour les stats proviseur)
+  const QUESTIONS = [
+    // ── FICHE 1 : Priorités opératoires (6e) ──────────────────────
+    { fiche:'calculs_num_priorites_operatoires', niveau:'6e', type:'calc', enonce:'Calcule :', expr:'5 + 4 × 3', rep:17 },
+    { fiche:'calculs_num_priorites_operatoires', niveau:'6e', type:'calc', enonce:'Calcule :', expr:'20 − 12 ÷ 4', rep:17 },
+    { fiche:'calculs_num_priorites_operatoires', niveau:'6e', type:'calc', enonce:'Calcule :', expr:'(8 + 2) × 3', rep:30 },
+
+    // ── FICHE 2 : Nombres relatifs × ÷ (6e) ───────────────────────
+    { fiche:'calculs_num_relatifs_mult_div', niveau:'6e', type:'calc', enonce:'Calcule :', expr:'(−6) × 3', rep:-18 },
+    { fiche:'calculs_num_relatifs_mult_div', niveau:'6e', type:'calc', enonce:'Calcule :', expr:'(−4) × (−5)', rep:20 },
+    { fiche:'calculs_num_relatifs_mult_div', niveau:'6e', type:'calc', enonce:'Calcule :', expr:'(−20) ÷ (−4)', rep:5 },
+
+    // ── FICHE 3 : Décimaux 3A — raisonnement (5e) ─────────────────
+    { fiche:'calculs_num_decimaux_3A_raisonnement', niveau:'5e', type:'qcm', enonce:'Quand on multiplie par 0,5, le résultat va…', expr:'10 × 0,5',
+      choixA:{ico:'↘', lbl:'rétrécir'}, choixB:{ico:'↗', lbl:'grandir'}, bonChoix:'a' },
+    { fiche:'calculs_num_decimaux_3A_raisonnement', niveau:'5e', type:'qcm', enonce:'Quand on divise par 0,2, le résultat va…', expr:'8 ÷ 0,2',
+      choixA:{ico:'↘', lbl:'rétrécir'}, choixB:{ico:'↗', lbl:'grandir'}, bonChoix:'b' },
+    { fiche:'calculs_num_decimaux_3A_raisonnement', niveau:'5e', type:'qcm', enonce:'Quand on multiplie par 0,9, le résultat va…', expr:'15 × 0,9',
+      choixA:{ico:'↘', lbl:'rétrécir'}, choixB:{ico:'↗', lbl:'grandir'}, bonChoix:'a' },
+
+    // ── FICHE 4 : Décimaux 3B — technique (5e) ────────────────────
+    { fiche:'calculs_num_decimaux_3B_technique', niveau:'5e', type:'calc', enonce:'Calcule :', expr:'35 × 0,1', rep:3.5 },
+    { fiche:'calculs_num_decimaux_3B_technique', niveau:'5e', type:'calc', enonce:'Calcule :', expr:'8 × 0,01', rep:0.08 },
+    { fiche:'calculs_num_decimaux_3B_technique', niveau:'5e', type:'calc', enonce:'Calcule :', expr:'7 ÷ 0,1', rep:70 },
+
+    // ── FICHE 5 : Arrondir (4e) ────────────────────────────────────
+    { fiche:'calculs_num_arrondis_decimaux', niveau:'4e', type:'qcm', enonce:'Arrondi à <strong>l\'unité</strong> ?', expr:'8,4',
+      choixA:{ico:'8', lbl:'huit'}, choixB:{ico:'9', lbl:'neuf'}, bonChoix:'a' },
+    { fiche:'calculs_num_arrondis_decimaux', niveau:'4e', type:'qcm', enonce:'Arrondi au <strong>dixième</strong> ?', expr:'6,28',
+      choixA:{ico:'6,2', lbl:'six virgule deux'}, choixB:{ico:'6,3', lbl:'six virgule trois'}, bonChoix:'b' },
+    { fiche:'calculs_num_arrondis_decimaux', niveau:'4e', type:'qcm', enonce:'Arrondi au <strong>centième</strong> ?', expr:'2,995',
+      choixA:{ico:'2,99', lbl:'deux virgule 99'}, choixB:{ico:'3,00', lbl:'trois virgule zéro zéro'}, bonChoix:'b' },
+
+    // ── FICHE 6 : Estimer / ordre de grandeur (4e) ────────────────
+    { fiche:'calculs_num_ordre_grandeur', niveau:'4e', type:'qcm', enonce:'La bonne estimation ?', expr:'203 + 498',
+      choixA:{ico:'≈ 700', lbl:'environ 700'}, choixB:{ico:'≈ 500', lbl:'environ 500'}, bonChoix:'a' },
+    { fiche:'calculs_num_ordre_grandeur', niveau:'4e', type:'qcm', enonce:'Ce résultat est-il plausible ?', expr:'19 × 21 = 39',
+      choixA:{ico:'✓', lbl:'plausible'}, choixB:{ico:'✗', lbl:'pas plausible'}, bonChoix:'b' },
+    { fiche:'calculs_num_ordre_grandeur', niveau:'4e', type:'qcm', enonce:'La bonne estimation ?', expr:'9,8 × 4,2',
+      choixA:{ico:'≈ 40', lbl:'environ 40'}, choixB:{ico:'≈ 14', lbl:'environ 14'}, bonChoix:'a' },
+
+    // ── FICHE 7 : Fraction / décimal / pourcentage (3e) ──────────
+    { fiche:'calculs_num_passage_ecritures', niveau:'3e', type:'qcm', enonce:'<strong>0,75</strong> en pourcentage ?', expr:'0,75',
+      choixA:{ico:'7,5 %', lbl:'sept virgule cinq pour cent'}, choixB:{ico:'75 %', lbl:'soixante-quinze pour cent'}, bonChoix:'b' },
+    { fiche:'calculs_num_passage_ecritures', niveau:'3e', type:'qcm', enonce:'<strong>40 %</strong> en décimal ?', expr:'40 %',
+      choixA:{ico:'0,4', lbl:'zéro virgule quatre'}, choixB:{ico:'4,0', lbl:'quatre'}, bonChoix:'a' },
+    { fiche:'calculs_num_passage_ecritures', niveau:'3e', type:'qcm', enonce:'<strong>1/5</strong> en décimal ?', expr:'<span class="frac-inline"><span class="fn">1</span><span class="fb"></span><span class="fd">5</span></span>',
+      choixA:{ico:'0,2', lbl:'zéro virgule deux'}, choixB:{ico:'0,5', lbl:'zéro virgule cinq'}, bonChoix:'a' },
+
+    // ── FICHE 8 : Racines carrées (3e) ────────────────────────────
+    { fiche:'calculs_num_racines_carrees', niveau:'3e', type:'qcm', enonce:'Cette égalité est-elle <strong>vraie</strong> ?', expr:'√36 = 6',
+      choixA:{ico:'vrai', lbl:'oui, c\'est juste'}, choixB:{ico:'faux', lbl:'non, c\'est faux'}, bonChoix:'a' },
+    { fiche:'calculs_num_racines_carrees', niveau:'3e', type:'qcm', enonce:'Une racine vaut <strong>7</strong>. Quel nombre est sous la racine ?', expr:'√? = 7',
+      choixA:{ico:'14', lbl:'quatorze'}, choixB:{ico:'49', lbl:'quarante-neuf'}, bonChoix:'b' },
+    { fiche:'calculs_num_racines_carrees', niveau:'3e', type:'qcm', enonce:'<strong>50</strong> est-il un <strong>carré parfait</strong> ?', expr:'50',
+      choixA:{ico:'oui', lbl:'oui'}, choixB:{ico:'non', lbl:'non'}, bonChoix:'b' },
+  ];
+
+  const NOMS_FICHES = {
+    'calculs_num_priorites_operatoires':      'Priorités opératoires',
+    'calculs_num_relatifs_mult_div':          'Nombres relatifs (× et ÷)',
+    'calculs_num_decimaux_3A_raisonnement':   'Décimaux — raisonnement × ÷',
+    'calculs_num_decimaux_3B_technique':      'Décimaux — technique 0,1 ; 0,01',
+    'calculs_num_arrondis_decimaux':          'Arrondir un nombre décimal',
+    'calculs_num_ordre_grandeur':             'Ordre de grandeur et estimation',
+    'calculs_num_passage_ecritures':          'Fraction, décimal, pourcentage',
+    'calculs_num_racines_carrees':            'Les racines carrées',
+  };
+
+  const NB_TOTAL = QUESTIONS.length;
+  let qIdx = 0;
+  let reponses = [];
+  let enAttente = false;
+
+  // Mode réévaluation (textes adaptés)
+  if (isReeval) {
+    document.getElementById('chargement-badge').textContent = 'Évaluation de progression';
+    document.getElementById('accueil-badge').textContent = 'Évaluation de progression · Calculs numériques';
+    document.getElementById('accueil-titre').innerHTML = 'Mesure de tes progrès<br><span class="accent">' + nom.split(' ')[0] + ' !</span>';
+    document.getElementById('accueil-intro').innerHTML =
+      'Tu vas <strong>repasser l\'évaluation diagnostique</strong> pour mesurer tes progrès après ton travail sur les fiches de remédiation.<br><br>' +
+      'Les <strong>' + NB_TOTAL + ' mêmes questions</strong> vont te permettre de voir concrètement l\'évolution de ton score.<br><br>' +
+      'Il n\'y a <strong>pas de retour en arrière</strong> possible.';
+    document.getElementById('resultat-badge').textContent = 'Évaluation de progression terminée ✓';
+  }
+
+  async function verifierDejaFait() {
+    if (!email) { allerVers('ecran-chargement','ecran-accueil'); return; }
+    if (isReeval) { allerVers('ecran-chargement','ecran-accueil'); return; }
+
+    const timeout = setTimeout(() => allerVers('ecran-chargement','ecran-accueil'), 8000);
+    try {
+      const res = await fetch(APPS_SCRIPT_URL + '?type=evaluation&email=' + encodeURIComponent(email));
+      const data = await res.json();
+      clearTimeout(timeout);
+      if (data.status === 'ok' && data.deja_fait) {
+        afficherResultats(data.resultats);
+        allerVers('ecran-chargement','ecran-resultat');
+      } else {
+        allerVers('ecran-chargement','ecran-accueil');
+      }
+    } catch(e) { clearTimeout(timeout); allerVers('ecran-chargement','ecran-accueil'); }
+  }
+  verifierDejaFait();
+
+  function chargerQuestion() {
+    enAttente = false;
+    const q = QUESTIONS[qIdx];
+    document.getElementById('prog-badge').textContent = 'Question ' + (qIdx+1) + ' / ' + NB_TOTAL;
+    document.getElementById('prog-fill').style.width = (qIdx / NB_TOTAL * 100) + '%';
+    document.getElementById('prog-nums').textContent = (qIdx+1) + ' question' + (qIdx>0?'s':'') + ' répondue' + (qIdx>0?'s':'');
+
+    let html = '<div class="q-label">Question ' + (qIdx+1) + '</div>';
+    html += '<div class="q-consigne">' + q.enonce + '</div>';
+    html += '<div class="q-expr">' + q.expr + '</div>';
+
+    if (q.type === 'calc') {
+      html += '<div class="rep-zone">';
+      html += '<input type="text" inputmode="decimal" id="inp-rep" class="rep-input" placeholder="?" />';
+      html += '<button class="btn-val" id="btn-val" onclick="validerCalc()">Valider →</button>';
+      html += '</div>';
+    } else if (q.type === 'qcm') {
+      html += '<div class="qcm-zone">';
+      html += '<button class="qcm-btn" id="qcm-a" onclick="validerQcm(\'a\')">';
+      html += '<span class="qcm-btn-ico">' + q.choixA.ico + '</span>';
+      html += '<span class="qcm-btn-lbl">' + q.choixA.lbl + '</span>';
+      html += '</button>';
+      html += '<button class="qcm-btn" id="qcm-b" onclick="validerQcm(\'b\')">';
+      html += '<span class="qcm-btn-ico">' + q.choixB.ico + '</span>';
+      html += '<span class="qcm-btn-lbl">' + q.choixB.lbl + '</span>';
+      html += '</button>';
+      html += '</div>';
+    }
+
+    const zone = document.getElementById('q-zone');
+    zone.style.animation = 'none'; zone.offsetHeight;
+    zone.style.animation = 'fadeIn 0.4s both';
+    zone.innerHTML = html;
+
+    // Focus auto sur l'input pour les calculs
+    setTimeout(() => {
+      const inp = document.getElementById('inp-rep');
+      if (inp) {
+        inp.focus();
+        inp.addEventListener('keydown', ev => {
+          if (ev.key === 'Enter') { ev.preventDefault(); validerCalc(); }
+        });
+      }
+    }, 200);
+  }
+
+  // Convertit une saisie (peut contenir virgule, espaces, signe −) en nombre
+  function parseRep(raw) {
+    if (!raw) return null;
+    let s = String(raw).trim().replace(/\s+/g,'');
+    s = s.replace(/,/g, '.');           // virgule française → point
+    s = s.replace(/[−–—]/g, '-');        // tirets typographiques → moins ASCII
+    if (s === '' || s === '-' || s === '.') return null;
+    const n = Number(s);
+    return isNaN(n) ? null : n;
+  }
+
+  function validerCalc() {
+    if (enAttente) return;
+    const q = QUESTIONS[qIdx];
+    const inp = document.getElementById('inp-rep');
+    if (!inp) return;
+    const val = parseRep(inp.value);
+    if (val === null) { inp.focus(); return; }
+
+    // Comparaison tolérante aux décimaux (1e-9 d'écart)
+    const correct = Math.abs(val - q.rep) < 1e-9;
+
+    reponses.push({ fiche: q.fiche, niveau: q.niveau, correct, repDonnee: val, qIndex: qIdx });
+
+    inp.disabled = true;
+    document.getElementById('btn-val').disabled = true;
+
+    enAttente = true;
+    setTimeout(() => {
+      qIdx++;
+      if (qIdx >= NB_TOTAL) terminerEvaluation();
+      else chargerQuestion();
+    }, 400);
+  }
+
+  function validerQcm(choix) {
+    if (enAttente) return;
+    const q = QUESTIONS[qIdx];
+    const correct = (choix === q.bonChoix);
+
+    // Désactiver les deux boutons sans donner d'indication visuelle du résultat
+    // (l'évaluation reste neutre : l'élève ne sait pas s'il a bon ou faux)
+    const btnA = document.getElementById('qcm-a');
+    const btnB = document.getElementById('qcm-b');
+    if (btnA) btnA.disabled = true;
+    if (btnB) btnB.disabled = true;
+
+    reponses.push({ fiche: q.fiche, niveau: q.niveau, correct, repDonnee: choix, qIndex: qIdx });
+    enAttente = true;
+    setTimeout(() => {
+      qIdx++;
+      if (qIdx >= NB_TOTAL) terminerEvaluation();
+      else chargerQuestion();
+    }, 400);
+  }
+
+  // DEV : skip tout en répondant faux
+  function devSkipAll() {
+    reponses = [];
+    QUESTIONS.forEach((q, idx) => {
+      reponses.push({
+        fiche: q.fiche, niveau: q.niveau, correct: false,
+        repDonnee: null, qIndex: idx
+      });
+    });
+    terminerEvaluation();
+  }
+
+  function terminerEvaluation() {
+    // Agrégat par fiche
+    const blocs = {};
+    reponses.forEach(r => {
+      if (!blocs[r.fiche]) blocs[r.fiche] = { fiche: r.fiche, niveau: r.niveau, correct: 0, total: 0 };
+      blocs[r.fiche].total++;
+      if (r.correct) blocs[r.fiche].correct++;
+    });
+
+    // Seuil d'assignation : score < 2 sur 3 → fiche assignée
+    const resultats = Object.values(blocs).map(b => ({
+      fiche: b.fiche, niveau: b.niveau,
+      score: b.correct, total: b.total,
+      assigne: b.correct < 2
+    }));
+
+    // Sauvegarde côté serveur (mêmes paramètres que l'éval fractions)
+    if (email) {
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          type:'sauvegarder_evaluation',
+          email, nom, classe, etablissement:lycee, prof, prof_email:profEmail,
+          resultats
+        })
+      }).catch(() => {});
+    }
+
+    // ⚠ Pose un flag localStorage pour signaler à l'espace élève que l'éval
+    // de ce thème a été passée. Utilisé pour distinguer "tout maîtrisé" de
+    // "éval pas faite" côté espace élève (où l'absence de fiches assignées
+    // est sinon indistinguable).
+    try {
+      if (email) {
+        localStorage.setItem('eval_done_calcul_numerique_' + email, 'true');
+      }
+    } catch(e) { /* localStorage indisponible : tant pis */ }
+
+    afficherResultats(resultats);
+    const ecranCourant = document.getElementById('ecran-eval').classList.contains('cache')
+      ? (document.getElementById('ecran-accueil').classList.contains('cache') ? 'ecran-chargement' : 'ecran-accueil')
+      : 'ecran-eval';
+    allerVers(ecranCourant, 'ecran-resultat');
+  }
+
+  function afficherResultats(resultats) {
+    const nbAssignes = resultats.filter(r => r.assigne).length;
+    const nbOk = resultats.filter(r => !r.assigne).length;
+    document.getElementById('res-nb-fiches').textContent = nbAssignes;
+    document.getElementById('res-nb-ok').textContent = nbOk;
+
+    if (isReeval) {
+      if (nbAssignes === 0)         document.getElementById('res-message').textContent = '🎉 Félicitations ! Tu maîtrises désormais toutes les notions. Tes progrès sont remarquables.';
+      else if (nbAssignes <= 3)     document.getElementById('res-message').textContent = 'Belle progression ! Quelques notions restent à consolider, mais tu as bien avancé.';
+      else                          document.getElementById('res-message').textContent = 'Tu peux continuer à progresser en retravaillant ces notions. Les fiches restent disponibles dans ton espace.';
+    } else {
+      if (nbAssignes === 0)         document.getElementById('res-message').textContent = '🎉 Excellent ! Tu maîtrises toutes les notions sur les calculs numériques.';
+      else if (nbAssignes <= 3)     document.getElementById('res-message').textContent = 'Bon travail ! Quelques notions sont à consolider. Tes fiches sont prêtes dans ton espace.';
+      else                          document.getElementById('res-message').textContent = 'Pas d\'inquiétude ! Les fiches ci-dessous t\'aideront à progresser étape par étape.';
+    }
+
+    // Trier : assignées d'abord (par niveau croissant), puis maîtrisées
+    const ordreNiveaux = { '6e': 1, '5e': 2, '4e': 3, '3e': 4 };
+    resultats.sort((a, b) => {
+      if (a.assigne !== b.assigne) return a.assigne ? -1 : 1;
+      return (ordreNiveaux[a.niveau]||9) - (ordreNiveaux[b.niveau]||9);
+    });
+
+    let html = '';
+    const hasDetail = reponses && reponses.length > 0;
+    resultats.forEach(r => {
+      const cls = r.assigne ? 'assigned' : 'ok';
+      const icone = r.assigne ? '📋' : '✓';
+      const onclickAttr = hasDetail ? ' onclick="ouvrirCorrection(\'' + r.fiche + '\')"' : '';
+      const suffix = hasDetail ? ' · voir la correction →' : '';
+      const styleAttr = hasDetail ? '' : ' style="cursor:default;"';
+      const niveauLbl = r.niveau || '';
+      html += '<div class="result-item ' + cls + '"' + onclickAttr + styleAttr + '>'
+            + '<div class="result-dot"></div>'
+            + '<div style="flex:1;">'
+              + '<div class="result-titre">' + icone + ' ' + NOMS_FICHES[r.fiche] + '</div>'
+              + '<div class="result-score">' + r.score + '/' + r.total + ' bonnes réponses' + suffix + '</div>'
+            + '</div>'
+            + (niveauLbl ? '<span class="result-niveau">' + niveauLbl + '</span>' : '')
+            + '</div>';
+    });
+    document.getElementById('result-grid').innerHTML = html;
+  }
+
+  // ── MODALE DE CORRECTION ──
+  function formatReponseDonnee(r, q) {
+    if (q.type === 'calc') {
+      if (r.repDonnee === null || r.repDonnee === undefined) return '—';
+      return String(r.repDonnee).replace('.', ',');
+    }
+    // qcm : afficher le libellé du choix donné
+    if (q.type === 'qcm') {
+      if (r.repDonnee === 'a') return q.choixA.ico + ' (' + q.choixA.lbl + ')';
+      if (r.repDonnee === 'b') return q.choixB.ico + ' (' + q.choixB.lbl + ')';
+      return '—';
+    }
+    return '—';
+  }
+
+  function formatBonneReponse(q) {
+    if (q.type === 'calc') return String(q.rep).replace('.', ',');
+    if (q.type === 'qcm') {
+      const bon = (q.bonChoix === 'a') ? q.choixA : q.choixB;
+      return bon.ico + ' (' + bon.lbl + ')';
+    }
+    return '—';
+  }
+
+  function ouvrirCorrection(ficheId) {
+    const questionsFiche = QUESTIONS.filter(q => q.fiche === ficheId);
+    const reponsesFiche = reponses.filter(r => r.fiche === ficheId);
+    if (reponsesFiche.length === 0) return;
+
+    const nbOk = reponsesFiche.filter(r => r.correct).length;
+    const total = reponsesFiche.length;
+
+    document.getElementById('correction-titre').textContent = NOMS_FICHES[ficheId] || '—';
+    document.getElementById('correction-score').textContent = nbOk + ' bonne réponse' + (nbOk > 1 ? 's' : '') + ' sur ' + total;
+
+    let html = '';
+    questionsFiche.forEach((q, idx) => {
+      const r = reponsesFiche.find(rep => QUESTIONS[rep.qIndex] === q);
+      if (!r) return;
+      const cls = r.correct ? 'ok' : 'ko';
+      const mark = r.correct ? '✓' : '✗';
+
+      html += '<div class="correction-q ' + cls + '">';
+      html += '<div class="correction-q-head">';
+      html += '<span class="correction-q-mark">' + mark + '</span>';
+      html += '<span class="correction-q-num">Question ' + (idx + 1) + '</span>';
+      html += '</div>';
+      html += '<div class="correction-q-enonce">' + q.enonce + '</div>';
+      html += '<div class="correction-q-expr">' + q.expr + '</div>';
+      html += '<div class="correction-reponses">';
+      html += '<div class="correction-rep-line toi"><span class="correction-rep-lbl">Ta réponse</span><span class="correction-rep-val">' + formatReponseDonnee(r, q) + '</span></div>';
+      if (!r.correct) {
+        html += '<div class="correction-rep-line bonne"><span class="correction-rep-lbl">Bonne réponse</span><span class="correction-rep-val">' + formatBonneReponse(q) + '</span></div>';
+      }
+      html += '</div>';
+      html += '</div>';
+    });
+
+    document.getElementById('correction-list').innerHTML = html;
+    document.getElementById('correction-overlay').classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function fermerCorrection(event) {
+    if (event && event.target && !event.target.classList.contains('correction-overlay')) return;
+    document.getElementById('correction-overlay').classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+
+  function retourEspace() {
+    window.location.href = 'https://arnaudreydellet.github.io/espace-eleve/';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      const ov = document.getElementById('correction-overlay');
+      if (ov && ov.classList.contains('visible')) {
+        ov.classList.remove('visible');
+        document.body.style.overflow = '';
+      }
+    }
+  });
+
+  function allerVers(a, b) {
+    const d=document.getElementById(a), ar=document.getElementById(b);
+    d.style.transition='opacity 0.5s ease'; d.style.opacity='0';
+    setTimeout(() => {
+      d.classList.add('cache'); d.style.opacity='1';
+      ar.classList.remove('cache'); ar.style.opacity='0';
+      ar.style.transition='opacity 0.5s ease';
+      setTimeout(() => { ar.style.opacity='1'; }, 20);
+    }, 500);
+  }
+</script>
+</body>
+</html>
