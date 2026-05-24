@@ -957,8 +957,22 @@
       const res = await fetch(APPS_SCRIPT_URL + '?type=evaluation&email=' + encodeURIComponent(email));
       const data = await res.json();
       clearTimeout(timeout);
-      if (data.status === 'ok' && data.deja_fait) {
-        afficherResultats(data.resultats);
+      // ⚠ Le backend renvoie TOUTES les fiches assignées (tous thèmes confondus).
+      // Il faut filtrer pour ne garder que celles du thème calculs_num_*,
+      // sinon on déclencherait "déjà fait" alors que l'élève a passé l'éval
+      // fractions et pas encore celle des calculs.
+      let dejaFaitCeTheme = false;
+      let fichesCeTheme = [];
+      if (data.status === 'ok' && data.deja_fait && Array.isArray(data.fiches_assignees)) {
+        fichesCeTheme = data.fiches_assignees.filter(f => String(f).indexOf('calculs_num_') === 0);
+        dejaFaitCeTheme = fichesCeTheme.length > 0;
+      }
+      if (dejaFaitCeTheme) {
+        // Reconstruire des résultats minimalistes pour afficher les fiches du thème
+        const resultats = fichesCeTheme.map(f => ({
+          fiche: f, niveau: '', score: 0, total: 3, assigne: true
+        }));
+        afficherResultats(resultats);
         allerVers('ecran-chargement','ecran-resultat');
       } else {
         allerVers('ecran-chargement','ecran-accueil');
@@ -1158,11 +1172,18 @@
       const suffix = hasDetail ? ' · voir la correction →' : '';
       const styleAttr = hasDetail ? '' : ' style="cursor:default;"';
       const niveauLbl = r.niveau || '';
+      // Sécurité : si l'ID n'est pas dans NOMS_FICHES (cas legacy ou autre thème),
+      // on affiche un nom dérivé de l'ID au lieu de "undefined".
+      const nomFiche = NOMS_FICHES[r.fiche] || String(r.fiche || '').replace(/^calculs_num_/, '').replace(/_/g, ' ');
+      // En mode "déjà fait" sans détail des bonnes réponses, on n'affiche que le nom de la fiche.
+      const ligneScore = hasDetail
+        ? (r.score + '/' + r.total + ' bonnes réponses' + suffix)
+        : 'Fiche à travailler';
       html += '<div class="result-item ' + cls + '"' + onclickAttr + styleAttr + '>'
             + '<div class="result-dot"></div>'
             + '<div style="flex:1;">'
-              + '<div class="result-titre">' + icone + ' ' + NOMS_FICHES[r.fiche] + '</div>'
-              + '<div class="result-score">' + r.score + '/' + r.total + ' bonnes réponses' + suffix + '</div>'
+              + '<div class="result-titre">' + icone + ' ' + nomFiche + '</div>'
+              + '<div class="result-score">' + ligneScore + '</div>'
             + '</div>'
             + (niveauLbl ? '<span class="result-niveau">' + niveauLbl + '</span>' : '')
             + '</div>';
